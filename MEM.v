@@ -2,34 +2,49 @@ module MEM (
   input clk,
   input reset_b,
 
-  input EX_MEM_MemRead,
-  input EX_MEM_MemWrite,
+  input [31:0] MemWriteData,
+  input [31:0] ALU_S,
 
-  input [31:0] EX_MEM_ALU_Z,
-  input [31:0] EX_MEM_RdData,
+  input [4:0] WriteReg,
 
-  output reg [] MEM_WB
-  );
+  input MemRead,
+  input MemWrite,
+
+  input RegWrite,
+  input [1:0] MemToReg,
+  input [31:0] PC_Plus4,
+  input LUOp,
+  input [31:0] LUData,
+
+  output reg [37:0] MEM_WB);
 
 wire [31:0] MemReadData;
 
 DataMem DataMem(
   .clk(clk),
   .rst(reset_b),
-  .rd(EX_MEM_MemRead),  // Read
-  .wr(EX_MEM_MemWrite),  // Write
-  .addr(EX_MEM_ALU_Z),
-  .wdata(EX_MEM_RdData),
+  .rd(MemRead),  // Read
+  .wr(MemWrite),  // Write
+  .addr(ALU_S),
+  .wdata(MemWriteData),
   .rdata(MemReadData));
 
+wire [31:0] RegWriteData;
 
-  always @(posedge clk or negedge reset_b) begin
-    if (~reset_b) begin
-      // TODO
-    end
-    else begin
+assign RegWriteData = LUOp ? LUData:
+         MemToReg == 2'b00 ? ALU_S :
+         MemToReg == 2'b01 ? MemReadData : PC_Plus4;
 
-    end
+
+always @(posedge clk or negedge reset_b) begin
+  if (~reset_b) begin
+    Mem_WB <= 0;
   end
+  else begin
+    MEM_WB[31:0] <= RegWriteData[31:0];
+    MEM_WB[36:32] <= WriteReg[4:0];
+    MEM_WB[37] <= RegWrite;
+  end
+end
 
 endmodule
