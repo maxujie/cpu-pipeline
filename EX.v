@@ -42,9 +42,9 @@ module EX(
   ALU ALU (
     .A(ALU_A),
     .B(ALU_B),
-    .ALUFun(ALUFun),
-    .Sign(Sign),
-    .Z(Z));
+    .ALUFunc(ALUFun),
+    .Signed(Sign),
+    .S(ALU_Z));
 
   always @(posedge clk or negedge reset_b) begin
     if (~reset_b) begin
