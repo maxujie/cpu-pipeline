@@ -15,4 +15,3 @@ assign digi_out3=(digi_in[11:8]==4'b0100)?digi_in[6:0]:7'b111_1111;
 assign digi_out4=(digi_in[11:8]==4'b1000)?digi_in[6:0]:7'b111_1111;
 
 endmodule
-
