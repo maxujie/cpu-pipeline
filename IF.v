@@ -23,7 +23,7 @@ reg [31:0] PC;
 
 assign PC_Plus4 = {(intruption | exception | PC[31]), PC[30:0] + 31'd4};
 
-Rom IM(PC, Instruction);
+ROM IM(PC, Instruction);
 
 always @ (posedge clk or negedge reset_b) begin
   if (~reset_b) begin

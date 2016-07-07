@@ -81,9 +81,12 @@ assign Rd = Instruction[15:11];
 assign Shamt = Instruction[10:6];
 assign Funct = Instruction[5:0];
 assign Imm16 = Instruction[15:0];
-assign Imm32 = EXTOp ? (Imm16[15] == 1 ? {16'hffff, Imm16} : {16'h0000, Imm16}) : {16'h0000, Imm16};
+assign Imm32 = EXTOp ? (Imm16[15] == 1'b1 ? {16'hffff, Imm16} : {16'h0000, Imm16}) : {16'h0000, Imm16};
 assign LUData = {Imm16[15:0], 16'hffff};
 
+
+wire [31:0] RsData;
+wire [31:0] RtData;
 
 RegFile RF (
   .reset(reset_b),
@@ -131,7 +134,7 @@ always @(posedge clk or negedge reset_b) begin
       ID_EX[157:125] <= {LUOp, LUData[31:0]}; // WB
       ID_EX[189:158] <= PC_Plus4[31:0];  // jal, jalr
       ID_EX[194:190] <= Shamt[4:0];
-      ID_EX[226:195] <= IMM32[31:0];
+      ID_EX[226:195] <= Imm32[31:0];
       ID_EX[227] <= Branch;  // EX
       ID_EX[229:228] <= RegDst[1:0];  // WB
     end else ID_EX[229:0] <= 0; // bubble
