@@ -37,7 +37,7 @@ always @ (posedge clk or negedge reset_b) begin
         3'b000 : PC <= PC_Plus4;
         3'b001 : PC <= branch_address;
         3'b010 : PC <= jump_address;
-        3'b100 : PC <= jr_address;
+        3'b100 : PC <= jr_address; // jr, jalr
         default : PC <= 32'hffff_ffff;  // unexcepted error
       endcase
     end

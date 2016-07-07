@@ -5,10 +5,8 @@ module ID (
   input [31:0] PC_Plus4,
   input [31:0] Instruction,
 
-  input [4:0] IF_ID_Rs,
-  input [4:0] IF_ID_Rt,
-  // input [4:0] ID_EX_Rt,
-  // input ID_EX_MemRead,
+  input [4:0] ID_EX_Rt,
+  input ID_EX_MemRead,
 
   input MEM_WB_RegWrite,
   input [4:0] MEM_WB_WriteReg,
@@ -20,9 +18,9 @@ module ID (
   output [31:0] jump_address,
   output [31:0] jr_address,
 
-  // TO
   output bubble,
-  output reg [228:0] ID_EX);
+  output exception,
+  output reg [229:0] ID_EX);
 
 wire [2:0] PCSrc;
 wire [1:0] RegDst;
@@ -36,6 +34,10 @@ wire MemRead;
 wire [1:0] MemToReg;
 wire EXTOp;
 wire LUOp;
+wire IRQ;
+assign IRQ = 1'b0;
+
+
 
 Control ControlUnit(
   .Instruct(Instruction),
@@ -57,6 +59,7 @@ Control ControlUnit(
 wire PCSrcJ;
 wire PCSrcJR;
 wire Branch;
+wire exception;
 wire [5:0] OpCode;
 wire [4:0] Rs;
 wire [4:0] Rt;
@@ -70,6 +73,7 @@ wire [31:0] LUData;
 assign PCSrcJ = PCSrc == 3'b010 ? 1'b1 : 1'b0;
 assign PCSrcJR = PCSrc == 3'b011 ? 1'b1 : 1'b0;
 assign Branch = PCSrc == 3'b001 ? 1'b1 : 1'b0;
+assign exception = PCSrc == 3'b101 ? 1'b1 : 1'b0;
 assign Opcode = Instruction[31:26];
 assign Rs = Instruction[25:21];
 assign Rt = Instruction[20:16];
@@ -103,8 +107,8 @@ assign jr_address = RsData;  // jalr, jr
 wire bubble;
 
 HazardDetection HD(
-  .IF_ID_Rs(IF_ID_Rs),
-  .IF_ID_Rt(IF_ID_Rt),
+  .IF_ID_Rs(Rs),
+  .IF_ID_Rt(Rt),
   .ID_EX_Rt(ID_EX_Rt),
   .ID_EX_MemRead(ID_EX_MemRead),
   .bubble(bubble));
@@ -121,16 +125,16 @@ always @(posedge clk or negedge reset_b) begin
       ID_EX[73:69] <= Rt[4:0];
       ID_EX[78:74] <= Rd[4:0];
       ID_EX[87:79] <= {ALUSrc1, ALUSrc2, ALUFun[5:0], Sign};  // ALU
-      ID_EX[119:88] <= branch_address; // EX
+      ID_EX[119:88] <= branch_address[31:0]; // EX
       ID_EX[121:120] <= {MemRead, MemWrite};  // MEM
       ID_EX[124:122] <= {MemToReg, RegWrite}; // WB
-      ID_EX[156:125] <= {LUOp, LUData[31:0]}; // WB
-      ID_EX[188:155] <= PC_Plus4;  // jal, jalr
-      ID_EX[193:189] <= Shamt;
-      ID_EX[225:194] <= IMM32;
-      ID_EX[226] <= Branch;  // EX
-      ID_EX[228:227] <= RegDst;  // WB
-    end else ID_EX[228:0] <= 0; // bubble
+      ID_EX[157:125] <= {LUOp, LUData[31:0]}; // WB
+      ID_EX[189:158] <= PC_Plus4[31:0];  // jal, jalr
+      ID_EX[194:190] <= Shamt[4:0];
+      ID_EX[226:195] <= IMM32[31:0];
+      ID_EX[227] <= Branch;  // EX
+      ID_EX[229:228] <= RegDst[1:0];  // WB
+    end else ID_EX[229:0] <= 0; // bubble
   end
 end
 
