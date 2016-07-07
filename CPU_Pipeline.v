@@ -9,8 +9,8 @@ wire [37:0] MEM_WB;
 
 wire PCSrcJR, PCSrcJ, PCSrcB;
 wire bubble;
-wire jump_address;
-wire jr_address;
+wire [31:0] jump_address;
+wire [31:0] jr_address;
 wire intruption;
 wire exception;
 
@@ -59,8 +59,8 @@ ID ID (
   );
 
 
-module EX(
-.input clk(clk),
+EX EX(
+  .clk(clk),
   .reset_b(reset_b),
 
   .ID_EX_Rs(ID_EX[68:64]),
@@ -69,7 +69,7 @@ module EX(
   .ID_EX_RsData(ID_EX[31:0]),
   .ID_EX_RtData(ID_EX[63:32]),
   .Shamt(ID_EX[194:190]),
-  .IMM32(ID_EX[226:195]),
+  .Imm32(ID_EX[226:195]),
 
   .ALUSrc1(ID_EX[87]),
   .ALUSrc2(ID_EX[86]),
@@ -98,7 +98,7 @@ module EX(
   .PCSrcB(PCSrcB),
   .EX_MEM(EX_MEM));
 
-module MEM (
+MEM MEM (
   .clk(clk),
   .reset_b(reset_b),
 
@@ -118,7 +118,4 @@ module MEM (
 
   .MEM_WB(MEM_WB));
 
-
-
-
-end module
+endmodule

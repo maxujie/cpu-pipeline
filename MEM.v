@@ -22,7 +22,7 @@ wire [31:0] MemReadData;
 
 DataMem DataMem(
   .clk(clk),
-  .rst(reset_b),
+  .reset(reset_b),
   .rd(MemRead),  // Read
   .wr(MemWrite),  // Write
   .addr(ALU_S),
@@ -38,7 +38,7 @@ assign RegWriteData = LUOp ? LUData:
 
 always @(posedge clk or negedge reset_b) begin
   if (~reset_b) begin
-    Mem_WB <= 0;
+    MEM_WB <= 0;
   end
   else begin
     MEM_WB[31:0] <= RegWriteData[31:0];

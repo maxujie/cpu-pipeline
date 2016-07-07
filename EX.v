@@ -8,7 +8,7 @@ module EX(
   input [31:0] ID_EX_RsData,
   input [31:0] ID_EX_RtData,
   input [4:0] Shamt,
-  input [31:0] IMM32,
+  input [31:0] Imm32,
 
   input ALUSrc1,
   input ALUSrc2,
@@ -61,7 +61,7 @@ module EX(
   wire [31:0] ALU_S;
 
   assign ALU_A = ALUSrc1 ? {27'b0, Shamt} : RsData;
-  assign ALU_B = ALUSrc2 ? IMM32 : RdData;
+  assign ALU_B = ALUSrc2 ? Imm32 : EX_MEM_RdData;
 
   ALU ALU (
     .A(ALU_A),
