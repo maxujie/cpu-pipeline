@@ -12,7 +12,8 @@ module ID (
   input [4:0] MEM_WB_WriteReg,
   input [31:0] MEM_WB_RegWriteData,
 
-  // TO IF
+  input ID_Flush,
+
   output PCSrcJ,
   output PCSrcJR,
   output [31:0] jump_address,
@@ -20,6 +21,7 @@ module ID (
 
   output bubble,
   output exception,
+  output jFlush,
   output reg [229:0] ID_EX);
 
 wire [2:0] PCSrc;
@@ -56,10 +58,7 @@ Control ControlUnit(
   .EXTOp(EXTOp),  // ID
   .LUOp(LUOp));  // ID EX WB
 
-wire PCSrcJ;
-wire PCSrcJR;
 wire Branch;
-wire exception;
 wire [5:0] OpCode;
 wire [4:0] Rs;
 wire [4:0] Rt;
@@ -72,9 +71,10 @@ wire [31:0] LUData;
 
 assign PCSrcJ = PCSrc == 3'b010 ? 1'b1 : 1'b0;
 assign PCSrcJR = PCSrc == 3'b011 ? 1'b1 : 1'b0;
+assign jFlush = PCSrcJ | PCSrcJR;
 assign Branch = PCSrc == 3'b001 ? 1'b1 : 1'b0;
 assign exception = PCSrc == 3'b101 ? 1'b1 : 1'b0;
-assign Opcode = Instruction[31:26];
+assign OpCode = Instruction[31:26];
 assign Rs = Instruction[25:21];
 assign Rt = Instruction[20:16];
 assign Rd = Instruction[15:11];
@@ -82,7 +82,7 @@ assign Shamt = Instruction[10:6];
 assign Funct = Instruction[5:0];
 assign Imm16 = Instruction[15:0];
 assign Imm32 = EXTOp ? (Imm16[15] == 1'b1 ? {16'hffff, Imm16} : {16'h0000, Imm16}) : {16'h0000, Imm16};
-assign LUData = {Imm16[15:0], 16'hffff};
+assign LUData = {Imm16[15:0], 16'h0000};
 
 
 wire [31:0] RsData;
@@ -99,15 +99,11 @@ RegFile RF (
   .addr3(MEM_WB_WriteReg),
   .data3(MEM_WB_RegWriteData));
 
-wire [31:0] jump_address;
 wire [31:0] branch_address;
-wire [31:0] jr_address;
 
 assign jump_address = {PC_Plus4[31:28], Instruction[25:0], 2'b0}; // j, jal
 assign branch_address = PC_Plus4 + {Imm32[29:0], 2'b00};
 assign jr_address = RsData;  // jalr, jr
-
-wire bubble;
 
 HazardDetection HD(
   .IF_ID_Rs(Rs),
@@ -121,7 +117,7 @@ always @(posedge clk or negedge reset_b) begin
     ID_EX <= 0;
   end
   else begin
-    if(~bubble) begin
+    if(~bubble && ~ID_Flush) begin
       ID_EX[31:0] <= RsData[31:0];
       ID_EX[63:32] <= RtData[31:0];
       ID_EX[68:64] <= Rs[4:0];

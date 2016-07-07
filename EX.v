@@ -61,7 +61,7 @@ module EX(
   wire [31:0] ALU_S;
 
   assign ALU_A = ALUSrc1 ? {27'b0, Shamt} : RsData;
-  assign ALU_B = ALUSrc2 ? Imm32 : EX_MEM_RdData;
+  assign ALU_B = ALUSrc2 ? Imm32 : RtData;
 
   ALU ALU (
     .A(ALU_A),
@@ -71,10 +71,10 @@ module EX(
     .S(ALU_S));
 
   wire [31:0] MemWriteData;
-  wire [5:0] WriteReg;
+  wire [4:0] WriteReg;
   assign MemWriteData = ID_EX_RtData[31:0];
-  assign WriteReg = RegDst == 2'b00 ? ID_EX_Rd[5:0] :
-  RegDst == 2'b01 ? ID_EX_Rt[5:0] :
+  assign WriteReg = RegDst == 2'b00 ? ID_EX_Rd[4:0] :
+  RegDst == 2'b01 ? ID_EX_Rt[4:0] :
   RegDst == 2'b10 ? 5'd31 : 5'd0;
 
   assign PCSrcB = (Branch && ALU_S[0] == 1'b1) ? 1'b1 : 1'b0;  // branch
@@ -107,26 +107,23 @@ module Forwarding (
   input EX_MEM_RegWrite,
   input MEM_WB_RegWrite,
 
-  output [1:0] ForwardA,
-  output [1:0] ForwardB
+  output reg [1:0] ForwardA,
+  output reg [1:0] ForwardB
   );
-
-  reg [1:0] ForwardA;
-  reg [1:0] ForwardB;
 
   always @(*) begin
     if (EX_MEM_RegWrite) begin
-      if (ID_EX_Rs == EX_MEM_Rd) ForwardA <= 2'b10;
-      else if (ID_EX_Rs == MEM_WB_Rd) ForwardA <= 2'b01;
-      else ForwardA <= 2'b01;
+      if (ID_EX_Rs == EX_MEM_Rd && EX_MEM_Rd != 5'd0) ForwardA <= 2'b10;
+      else if (ID_EX_Rs == MEM_WB_Rd && MEM_WB_Rd != 5'd0) ForwardA <= 2'b01;
+      else ForwardA <= 2'b00;
     end else ForwardA <= 2'b00;
   end
 
   always @(*) begin
     if (EX_MEM_RegWrite) begin
-      if (ID_EX_Rt == EX_MEM_Rd) ForwardB <= 2'b10;
-      else if (ID_EX_Rt == MEM_WB_Rd) ForwardB <= 2'b01;
-      else ForwardB <= 2'b01;
+      if (ID_EX_Rt == EX_MEM_Rd && EX_MEM_Rd != 5'd0) ForwardB <= 2'b10;
+      else if (ID_EX_Rt == MEM_WB_Rd && MEM_WB_Rd != 5'd0) ForwardB <= 2'b01;
+      else ForwardB <= 2'b00;
     end else ForwardB <= 2'b00;
   end
 endmodule

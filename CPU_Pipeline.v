@@ -9,12 +9,19 @@ wire [37:0] MEM_WB;
 
 wire PCSrcJR, PCSrcJ, PCSrcB;
 wire bubble;
+wire jFlush;
+wire IF_Flush;
+wire ID_Flush;
 wire [31:0] jump_address;
 wire [31:0] jr_address;
 wire intruption;
 wire exception;
 
+
 assign intruption = 1'b0;
+assign IF_Flush = jFlush | PCSrcB;
+assign ID_Flush = PCSrcB;
+
 
 IF IF (
   .clk(clk),
@@ -47,6 +54,8 @@ ID ID (
   .MEM_WB_WriteReg(MEM_WB[36:32]),
   .MEM_WB_RegWriteData(MEM_WB[31:0]),
 
+  .ID_Flush(ID_Flush),
+
   // TO IF
   .PCSrcJ(PCSrcJ),
   .PCSrcJR(PCSrcJR),
@@ -55,6 +64,7 @@ ID ID (
 
   .bubble(bubble),
   .exception(exception),
+  .jFlush(jFlush),
   .ID_EX(ID_EX)
   );
 

@@ -1,5 +1,3 @@
-`timescale 1ns/1ps
-
 module DataMem (reset,clk,rd,wr,addr,wdata,rdata);
 input reset,clk;
 input rd,wr;
