@@ -35,7 +35,6 @@ module EX(
   input MEM_WB_RegWrite,
 
   output PCSrcB,
-  output [31:0] branch_address,
   output reg [138:0] EX_MEM);
 
   wire [1:0] ForwardA;
@@ -73,13 +72,12 @@ module EX(
 
   wire [31:0] MemWriteData;
   wire [5:0] WriteReg;
-
-  assign PCSrcB = (Branch && ALU_S[0] == 1'b1) ? 1'b1 : 1'b0;  // branch
-  assign
   assign MemWriteData = ID_EX_RtData[31:0];
   assign WriteReg = RegDst == 2'b00 ? ID_EX_Rd[5:0] :
-                    RegDst == 2'b01 ? ID_EX_Rt[5:0] :
-                    RegDst == 2'b10 ? 5'd31 : 5'd0;
+  RegDst == 2'b01 ? ID_EX_Rt[5:0] :
+  RegDst == 2'b10 ? 5'd31 : 5'd0;
+
+  assign PCSrcB = (Branch && ALU_S[0] == 1'b1) ? 1'b1 : 1'b0;  // branch
 
 
   always @(posedge clk or negedge reset_b) begin
