@@ -8,6 +8,11 @@ module ID (
   input [4:0] ID_EX_Rt,
   input ID_EX_MemRead,
 
+  input [4:0] EX_MEM_Rd,
+  input [4:0] MEM_WB_Rd,
+  input [31:0] EX_MEM_RdData,
+  input [31:0] MEM_WB_RdData,
+  input EX_MEM_RegWrite,
   input MEM_WB_RegWrite,
   input [4:0] MEM_WB_WriteReg,
   input [31:0] MEM_WB_RegWriteData,
@@ -101,9 +106,15 @@ RegFile RF (
 
 wire [31:0] branch_address;
 
+wire [31:0] RsDataTrue;
+wire [31:0] RtDataTrue;
+
+assign RsDataTrue = (MEM_WB_RegWrite && Rs == MEM_WB_Rd && Rs != 2'b0) ? RsData : MEM_WB_RdData;
+assign RtDataTrue = (MEM_WB_RegWrite && Rt == MEM_WB_Rd && Rt != 2'b0) ? RtData : MEM_WB_RdData;
+
 assign jump_address = {PC_Plus4[31:28], Instruction[25:0], 2'b0}; // j, jal
 assign branch_address = PC_Plus4 + {Imm32[29:0], 2'b00};
-assign jr_address = RsData;  // jalr, jr
+assign jr_address = RsDataTrue;  // jalr, jr
 
 HazardDetection HD(
   .IF_ID_Rs(Rs),
@@ -112,21 +123,22 @@ HazardDetection HD(
   .ID_EX_MemRead(ID_EX_MemRead),
   .bubble(bubble));
 
+
 always @(posedge clk or negedge reset_b) begin
   if (~reset_b) begin
     ID_EX <= 0;
   end
   else begin
     if(~bubble && ~ID_Flush) begin
-      ID_EX[31:0] <= RsData[31:0];
-      ID_EX[63:32] <= RtData[31:0];
+      ID_EX[31:0] <= RsDataTrue[31:0];
+      ID_EX[63:32] <= RtDataTrue[31:0];
       ID_EX[68:64] <= Rs[4:0];
       ID_EX[73:69] <= Rt[4:0];
       ID_EX[78:74] <= Rd[4:0];
       ID_EX[87:79] <= {ALUSrc1, ALUSrc2, ALUFun[5:0], Sign};  // ALU
       ID_EX[119:88] <= branch_address[31:0]; // EX
-      ID_EX[121:120] <= {MemRead, MemWrite};  // MEM
-      ID_EX[124:122] <= {MemToReg, RegWrite}; // WB
+      ID_EX[121:120] <= PCSrcJR ? 2'b0 : {MemRead, MemWrite};  // MEM
+      ID_EX[124:122] <= PCSrcJR ? 3'b0 : {MemToReg, RegWrite}; // WB
       ID_EX[157:125] <= {LUOp, LUData[31:0]}; // WB
       ID_EX[189:158] <= PC_Plus4[31:0];  // jal, jalr
       ID_EX[194:190] <= Shamt[4:0];

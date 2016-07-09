@@ -50,6 +50,12 @@ ID ID (
   .ID_EX_Rt(ID_EX[73:69]),
   .ID_EX_MemRead(ID_EX[121]),
 
+  // Forwarding
+  .EX_MEM_Rd(EX_MEM[68:64]),
+  .MEM_WB_Rd(MEM_WB[36:32]),
+  .EX_MEM_RdData(EX_MEM[63:32]),
+  .MEM_WB_RdData(MEM_WB[31:0]),
+  .EX_MEM_RegWrite(EX_MEM[71]),
   .MEM_WB_RegWrite(MEM_WB[37]),
   .MEM_WB_WriteReg(MEM_WB[36:32]),
   .MEM_WB_RegWriteData(MEM_WB[31:0]),
@@ -73,11 +79,11 @@ EX EX(
   .clk(clk),
   .reset_b(reset_b),
 
-  .ID_EX_Rs(ID_EX[68:64]),
-  .ID_EX_Rt(ID_EX[73:69]),
-  .ID_EX_Rd(ID_EX[78:74]),
-  .ID_EX_RsData(ID_EX[31:0]),
-  .ID_EX_RtData(ID_EX[63:32]),
+  .Rs(ID_EX[68:64]),
+  .Rt(ID_EX[73:69]),
+  .Rd(ID_EX[78:74]),
+  .RsData(ID_EX[31:0]),
+  .RtData(ID_EX[63:32]),
   .Shamt(ID_EX[194:190]),
   .Imm32(ID_EX[226:195]),
 
@@ -104,6 +110,8 @@ EX EX(
   .MEM_WB_RdData(MEM_WB[31:0]),
   .EX_MEM_RegWrite(EX_MEM[71]),
   .MEM_WB_RegWrite(MEM_WB[37]),
+  .MEM_WB_WriteReg(MEM_WB[36:32]),
+  .MEM_WB_RegWriteData(MEM_WB[31:0]),
 
   .PCSrcB(PCSrcB),
   .EX_MEM(EX_MEM));

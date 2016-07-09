@@ -8,10 +8,10 @@ input [31:0] wdata;
 parameter RAM_SIZE = 256;
 reg [31:0] RAMDATA [RAM_SIZE-1:0];
 
-assign rdata=(rd && (addr < RAM_SIZE))?RAMDATA[addr[31:2]]:32'b0;
+assign rdata= rd ? RAMDATA[addr[9:2]]:32'b0;
 
 always@(posedge clk) begin
-	if(wr && (addr < RAM_SIZE)) RAMDATA[addr[31:2]]<=wdata;
+	if(wr) RAMDATA[addr[9:2]] <= wdata;
 end
 
 endmodule

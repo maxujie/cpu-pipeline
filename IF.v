@@ -45,7 +45,7 @@ always @ (posedge clk or negedge reset_b) begin
     else if (exception) PC <= 32'h8000_0008;
     else PC <= 32'hffff_ffff;  // if not bubble end
     IF_ID <= IF_Flush ? {PC_Plus4, 32'd0} : {PC_Plus4, Instruction};
-  end
+  end // end bubble
   end
 end
 
