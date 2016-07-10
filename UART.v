@@ -21,6 +21,7 @@ module UART(
 
     wire rx_status;
     reg receive_done;
+    assign rx_interrupt_status = receive_done;
     wire [7:0] rx_data_received;
     uart_receiver uart_receiver(clk_50m, clk_baud, uart_rxd, rx_status, rx_data_received);
 
@@ -28,7 +29,10 @@ module UART(
     wire tx_en;
     assign tx_en = tx_interrupt_en & tx_status & send;
     reg send_done;
+    assign tx_interrupt_status = send_done;
     uart_sender uart_sender(clk_baud, uart_txd, tx_status, tx_data, tx_en);
+
+    assign free = rx_status & tx_status;
 
     always @ (posedge rx_status or posedge receive) begin
         if (receive) begin

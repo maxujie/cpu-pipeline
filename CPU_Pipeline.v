@@ -1,16 +1,22 @@
 module CPU_Pipeline (
-  input clk,
+  input clk_50m,
   input reset_b,
 
   // Peripheral
   input [7:0] switch,
   output [7:0] led,
-  output [11:0] digi,
+  output [6:0] bcd1,
+  output [6:0] bcd2,
+  output [6:0] bcd3,
+  output [6:0] bcd4,
 
   // UART
-  input clk_50m,
   input uart_rxd,
   output uart_txd);
+
+  wire clk;
+  CPU_CLK CLK (clk_50m, clk);
+
 
   wire [63:0] IF_ID;
   wire [229:0] ID_EX;
@@ -33,6 +39,7 @@ module CPU_Pipeline (
   assign IF_Flush = jFlush | PCSrcB;
   assign ID_Flush = PCSrcB;
 
+  wire [11:0] digi;
 
   IF IF (
   .clk(clk),
@@ -158,5 +165,12 @@ module CPU_Pipeline (
   .clk_50m(clk_50m),
   .uart_rxd(uart_rxd),
   .uart_txd(uart_txd));
+
+ digitube_scan(
+     .digi_in(digi),
+     .digi_out1(bcd1),
+     .digi_out2(bcd2),
+     .digi_out3(bcd3),
+     .digi_out4(bcd4));
 
 endmodule

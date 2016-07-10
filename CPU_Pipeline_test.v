@@ -14,6 +14,6 @@ reg [7:0] switch = 8'b11111111;
 wire [7:0] led;
 wire [11:0] digi;
 
-CPU_Pipeline CPU(clk, reset_b, switch, led, digi, clk_50m, uart_rxd, uart_txd);
+CPU_Pipeline CPU(clk, reset_b, switch, led, digi, uart_rxd, uart_txd);
 
 endmodule

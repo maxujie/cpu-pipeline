@@ -44,8 +44,8 @@ parameter UART_CON_ADDR = 32'h40000020;
 
 reg tx_interrupt_en;
 reg rx_interrupt_en;
-reg [7:0] uart_txd_reg;
-reg [7:0] uart_rxd_reg;
+reg [7:0] uart_txd_reg = 0;
+reg [7:0] uart_rxd_reg = 0;
 wire [7:0] rx_data;
 
 wire send;
