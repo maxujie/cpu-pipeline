@@ -107,8 +107,8 @@ RegFile RF (
 
 wire [31:0] RsDataTrue;
 wire [31:0] RtDataTrue;
-assign RsDataTrue = (MEM_WB_RegWrite && Rs == MEM_WB_Rd && Rs != 2'b0) ? RsData : MEM_WB_RdData;
-assign RtDataTrue = (MEM_WB_RegWrite && Rt == MEM_WB_Rd && Rt != 2'b0) ? RtData : MEM_WB_RdData;
+assign RsDataTrue = (MEM_WB_RegWrite && Rs == MEM_WB_Rd && Rs != 5'b0) ? RsData : MEM_WB_RdData;
+assign RtDataTrue = (MEM_WB_RegWrite && Rt == MEM_WB_Rd && Rt != 5'b0) ? RtData : MEM_WB_RdData;
 
 wire [31:0] branch_address;
 assign jump_address = {PC_Plus4[31:28], Instruction[25:0], 2'b0}; // j, jal

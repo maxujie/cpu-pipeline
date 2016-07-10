@@ -56,14 +56,14 @@ module EX(
   wire [31:0] RtDataTrue;
 
   assign RsDataTrue = ForwardA == 2'b00 ? RsData : (ForwardA == 2'b10 ? EX_MEM_RdData : MEM_WB_RdData);
-  assign RtDataTrue = ForwardB == 2'b00 ? RtData : (ForwardA == 2'b10 ? EX_MEM_RdData : MEM_WB_RdData);
+  assign RtDataTrue = ForwardB == 2'b00 ? RtData : (ForwardB == 2'b10 ? EX_MEM_RdData : MEM_WB_RdData);
 
   wire [31:0] ALU_A;
   wire [31:0] ALU_B;
   wire [31:0] ALU_S;
 
   assign ALU_A = ALUSrc1 ? {27'b0, Shamt} : RsDataTrue;
-  assign ALU_B = ALUSrc2 ? Imm32 : RsDataTrue;
+  assign ALU_B = ALUSrc2 ? Imm32 : RtDataTrue;
 
   ALU ALU (
     .A(ALU_A),
