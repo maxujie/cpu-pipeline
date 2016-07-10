@@ -174,7 +174,7 @@ begin
 							PCSrc = 3'b101;
 							RegDst = 2'b11;
 							RegWr = 1;
-							MemToReg = 2'b11;
+							MemToReg = 2'b10;
 						end
 						else//nop
 						begin
@@ -386,7 +386,7 @@ begin
 				begin
 					PCSrc = 3'b101;
 					RegDst = 2'b11;
-					MemToReg = 2'b11;
+					MemToReg = 2'b10;
 					RegWr = 1;
 					MemWr = 0;
 					MemRd = 0;

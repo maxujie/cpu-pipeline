@@ -34,8 +34,7 @@ wire [31:0] RegWriteData;
 assign RegWriteData = LUOp ? LUData:
          MemToReg == 2'b00 ? ALU_S :
          MemToReg == 2'b01 ? MemReadData :
-         MemToReg == 2'b10 ? PC_Plus4 :
-         PC_Plus4 - 32'd4;  // exception
+         PC_Plus4; // jal/jalr or exception
 
 
 always @(posedge clk or negedge reset_b) begin
