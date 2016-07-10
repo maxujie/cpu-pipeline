@@ -21,7 +21,7 @@ module UART(
 
     wire rx_status;
     reg receive_done;
-    reg [7:0] rx_data_received;
+    wire [7:0] rx_data_received;
     uart_receiver uart_receiver(clk_50m, clk_baud, uart_rxd, rx_status, rx_data_received);
 
     wire tx_status;
