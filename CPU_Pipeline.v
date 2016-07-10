@@ -14,6 +14,7 @@ module CPU_Pipeline (
   input uart_rxd,
   output uart_txd);
 
+
   wire clk;
   CPU_CLK CLK (clk_50m, clk);
 
@@ -166,7 +167,7 @@ module CPU_Pipeline (
   .uart_rxd(uart_rxd),
   .uart_txd(uart_txd));
 
- digitube_scan(
+ digitube_scan digitube_scan(
      .digi_in(digi),
      .digi_out1(bcd1),
      .digi_out2(bcd2),
