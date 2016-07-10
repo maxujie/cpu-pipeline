@@ -354,7 +354,7 @@ begin
 				EXTOp = 1;
 				LUOp = 0;
 			end
-			6'b101001://sw
+			6'b101011://sw
 			begin
 				PCSrc = 3'b000;
 				ALUFun = 6'b000000;
