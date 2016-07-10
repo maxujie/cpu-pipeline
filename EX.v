@@ -77,7 +77,8 @@ module EX(
   assign MemWriteData = RtDataTrue[31:0];
   assign WriteReg = RegDst == 2'b00 ? Rd[4:0] :
   RegDst == 2'b01 ? Rt[4:0] :
-  RegDst == 2'b10 ? 5'd31 : 5'd0;
+  RegDst == 2'b10 ? 5'd31 :
+  RegDst == 2'b11 ? 5'd26 : 5'd0;  // Exception
 
   assign PCSrcB = (Branch && ALU_S[0] == 1'b1) ? 1'b1 : 1'b0;  // branch
 
