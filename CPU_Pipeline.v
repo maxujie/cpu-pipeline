@@ -1,29 +1,35 @@
 module CPU_Pipeline (
   input clk,
-  input reset_b);
+  input reset_b,
 
-wire [63:0] IF_ID;
-wire [229:0] ID_EX;
-wire [138:0] EX_MEM;
-wire [37:0] MEM_WB;
+  // Peripheral
+  input [7:0] switch,
+  output [7:0] led,
+  output [11:0] digi);
 
-wire PCSrcJR, PCSrcJ, PCSrcB;
-wire bubble;
-wire jFlush;
-wire IF_Flush;
-wire ID_Flush;
-wire [31:0] jump_address;
-wire [31:0] jr_address;
-wire intruption;
-wire exception;
+  wire [63:0] IF_ID;
+  wire [229:0] ID_EX;
+  wire [138:0] EX_MEM;
+  wire [37:0] MEM_WB;
+
+  wire PCSrcJR, PCSrcJ, PCSrcB;
+  wire bubble;
+  wire jFlush;
+  wire IF_Flush;
+  wire ID_Flush;
+  wire [31:0] jump_address;
+  wire [31:0] jr_address;
+  wire intruption;
+  wire exception;
 
 
-assign intruption = 1'b0;
-assign IF_Flush = jFlush | PCSrcB;
-assign ID_Flush = PCSrcB;
+  wire irqout;
+  assign intruption = irqout;
+  assign IF_Flush = jFlush | PCSrcB;
+  assign ID_Flush = PCSrcB;
 
 
-IF IF (
+  IF IF (
   .clk(clk),
   .reset_b(reset_b),
 
@@ -40,7 +46,7 @@ IF IF (
 
   .IF_ID(IF_ID));
 
-ID ID (
+  ID ID (
   .clk(clk),
   .reset_b(reset_b),
 
@@ -61,6 +67,7 @@ ID ID (
   .MEM_WB_RegWriteData(MEM_WB[31:0]),
 
   .ID_Flush(ID_Flush),
+  .IRQ(irqout),
 
   // TO IF
   .PCSrcJ(PCSrcJ),
@@ -75,7 +82,7 @@ ID ID (
   );
 
 
-EX EX(
+  EX EX(
   .clk(clk),
   .reset_b(reset_b),
 
@@ -116,7 +123,7 @@ EX EX(
   .PCSrcB(PCSrcB),
   .EX_MEM(EX_MEM));
 
-MEM MEM (
+  MEM MEM (
   .clk(clk),
   .reset_b(reset_b),
 
@@ -134,6 +141,12 @@ MEM MEM (
   .LUOp(EX_MEM[138]),
   .LUData(EX_MEM[137:106]),
 
-  .MEM_WB(MEM_WB));
+  .MEM_WB(MEM_WB),
+
+  // Peripheral
+  .switch(switch),
+  .led(led),
+  .digi(digi),
+  .irqout(irqout));
 
 endmodule

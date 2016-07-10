@@ -16,7 +16,13 @@ module MEM (
   input LUOp,
   input [31:0] LUData,
 
-  output reg [37:0] MEM_WB);
+  output reg [37:0] MEM_WB,
+  
+  // Peripheral
+  input [7:0] switch,
+  output [7:0] led,
+  output [11:0] digi,
+  output irqout);
 
 wire [31:0] MemReadData;
 
@@ -27,7 +33,13 @@ DataMem DataMem(
   .wr(MemWrite),  // Write
   .addr(ALU_S),
   .wdata(MemWriteData),
-  .rdata(MemReadData));
+  .rdata(MemReadData),
+
+  // Peripheral
+  .switch(switch),
+  .led(led),
+  .digi(digi),
+  .irqout(irqout));
 
 wire [31:0] RegWriteData;
 

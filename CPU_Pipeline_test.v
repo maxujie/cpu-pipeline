@@ -10,6 +10,10 @@ initial begin
     end
 end
 
-CPU_Pipeline CPU(clk, reset_b);
+reg [7:0] switch = 8'b11111111;
+wire [7:0] led;
+wire [11:0] digi;
+
+CPU_Pipeline CPU(clk, reset_b, switch, led, digi);
 
 endmodule
