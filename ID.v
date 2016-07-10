@@ -18,6 +18,7 @@ module ID (
   input [31:0] MEM_WB_RegWriteData,
 
   input ID_Flush,
+  input IRQ,
 
   output PCSrcJ,
   output PCSrcJR,
@@ -41,14 +42,12 @@ wire MemRead;
 wire [1:0] MemToReg;
 wire EXTOp;
 wire LUOp;
-wire IRQ;
-assign IRQ = 1'b0;
 
 
 
 Control ControlUnit(
   .Instruct(Instruction),
-  .IRQ(IRQ), // TODO
+  .IRQ(IRQ),
   .PC31(PC_Plus4[31]),
   .PCSrc(PCSrc),  // IF
   .RegDst(RegDst),  // WB
