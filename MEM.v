@@ -17,12 +17,17 @@ module MEM (
   input [31:0] LUData,
 
   output reg [37:0] MEM_WB,
-  
+
   // Peripheral
   input [7:0] switch,
   output [7:0] led,
   output [11:0] digi,
-  output irqout);
+  output irqout,
+
+  // UART
+  input clk_50m,
+  input uart_rxd,
+  output uart_txd);
 
 wire [31:0] MemReadData;
 
@@ -39,7 +44,12 @@ DataMem DataMem(
   .switch(switch),
   .led(led),
   .digi(digi),
-  .irqout(irqout));
+  .irqout(irqout),
+
+  // UART
+  .clk_50m(clk_50m),
+  .uart_rxd(uart_rxd),
+  .uart_txd(uart_txd));
 
 wire [31:0] RegWriteData;
 

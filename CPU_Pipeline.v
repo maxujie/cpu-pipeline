@@ -5,7 +5,12 @@ module CPU_Pipeline (
   // Peripheral
   input [7:0] switch,
   output [7:0] led,
-  output [11:0] digi);
+  output [11:0] digi,
+
+  // UART
+  input clk_50m,
+  input uart_rxd,
+  output uart_txd);
 
   wire [63:0] IF_ID;
   wire [229:0] ID_EX;
@@ -147,6 +152,11 @@ module CPU_Pipeline (
   .switch(switch),
   .led(led),
   .digi(digi),
-  .irqout(irqout));
+  .irqout(irqout),
+
+  // UART
+  .clk_50m(clk_50m),
+  .uart_rxd(uart_rxd),
+  .uart_txd(uart_txd));
 
 endmodule
