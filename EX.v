@@ -74,7 +74,7 @@ module EX(
 
   wire [31:0] MemWriteData;
   wire [4:0] WriteReg;
-  assign MemWriteData = RtData[31:0];
+  assign MemWriteData = RtDataTrue[31:0];
   assign WriteReg = RegDst == 2'b00 ? Rd[4:0] :
   RegDst == 2'b01 ? Rt[4:0] :
   RegDst == 2'b10 ? 5'd31 : 5'd0;
