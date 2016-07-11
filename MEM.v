@@ -27,7 +27,8 @@ module MEM (
   // UART
   input clk_50m,
   input uart_rxd,
-  output uart_txd);
+  output uart_txd,
+  output uart_wait);
 
 wire [31:0] MemReadData;
 
@@ -49,7 +50,8 @@ DataMem DataMem(
   // UART
   .clk_50m(clk_50m),
   .uart_rxd(uart_rxd),
-  .uart_txd(uart_txd));
+  .uart_txd(uart_txd),
+  .uart_wait(uart_wait));
 
 wire [31:0] RegWriteData;
 
@@ -63,7 +65,7 @@ always @(posedge clk or negedge reset_b) begin
   if (~reset_b) begin
     MEM_WB <= 0;
   end
-  else begin
+  else if (~uart_wait) begin
     MEM_WB[31:0] <= RegWriteData[31:0];
     MEM_WB[36:32] <= WriteReg[4:0];
     MEM_WB[37] <= RegWrite;

@@ -38,8 +38,8 @@ endmodule
 
 module UARTReceiver (UART_RX,Baudx16clk,RX_DATA,RX_STATUS);
 input UART_RX,Baudx16clk;
-output reg [7:0] RX_DATA;
-output reg RX_STATUS;
+output reg [7:0] RX_DATA = 0;
+output reg RX_STATUS = 0;
 
 reg [7:0] cnt;
 reg idle = 1;
@@ -90,7 +90,7 @@ endmodule
 module UARTSender (UART_TX,Baudclk,TX_DATA,TX_EN,TX_STATUS);
 input [7:0] TX_DATA;
 input Baudclk,TX_EN;
-output reg UART_TX;
+output reg UART_TX = 1;
 output reg TX_STATUS = 1'b1;
 
 reg [3:0] cnt;
@@ -139,17 +139,17 @@ end
 
 endmodule
 
-module UART (UART_RX,UART_TX,sysclk,cpuclk,reset,rd,wr,addr,wdata,rdata);
+module UART (UART_RX,UART_TX,sysclk,cpuclk,reset,rd,wr,addr,wdata,rdata,RX_IRQ,TX_IRQ);
 input [31:0] addr,wdata;
 input UART_RX,sysclk,cpuclk,reset,rd,wr;
-output reg [31:0] rdata;
-output UART_TX;
+output reg [31:0] rdata = 0;
+output UART_TX,RX_IRQ,TX_IRQ;
 
 wire [7:0] RX_DATA;
 wire TX_STATUS,RX_STATUS,Baudx16clk,Baudclk;
-reg [7:0] TX_DATA,UART_RXD,UART_TXD;
-reg [4:0] UART_CON;
-reg TX_EN,Send,Write;
+reg [7:0] TX_DATA = 0,UART_RXD = 0,UART_TXD = 0;
+reg [4:0] UART_CON = 0;
+reg TX_EN = 0,Send = 0,Write = 0;
 
 Baudx16 Baudx16Unit (sysclk,Baudx16clk);
 
@@ -244,5 +244,8 @@ begin
 		end
 	end
 end
+
+assign RX_IRQ = UART_CON[3]&UART_CON[1];
+assign TX_IRQ = UART_CON[2]&UART_CON[0];
 
 endmodule

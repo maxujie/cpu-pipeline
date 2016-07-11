@@ -16,7 +16,8 @@ module DataMem (
 	// UART
 	input clk_50m,
 	input uart_rxd,
-	output uart_txd);
+	output uart_txd,
+	output uart_wait);
 
 parameter RAM_SIZE = 256;
 parameter RAM_BIT_SIZE = 1024;
@@ -24,6 +25,10 @@ reg [31:0] RAMDATA [RAM_SIZE-1:0];
 
 wire [31:0] rdata_peri;
 wire [31:0] rdata_uart;
+
+wire PR_IRQ, TX_IRQ, RX_IRQ;
+assign irqout = PR_IRQ;
+assign uart_wait = 0;
 
 Peripheral Peripheral (
 	.reset(reset),
@@ -36,7 +41,7 @@ Peripheral Peripheral (
 	.led(led),
 	.switch(switch),
 	.digi(digi),
-	.irqout(irqout));
+	.irqout(PR_IRQ));
 
 UART UART(
 	.UART_RX(uart_rxd),
@@ -48,14 +53,13 @@ UART UART(
 	.wr(wr),
 	.addr(addr),
 	.wdata(wdata),
-	.rdata(rdata_uart));
+	.rdata(rdata_uart),
+	.RX_IRQ(RX_IRQ),
+	.TX_IRQ(TX_IRQ));
 
 wire [31:0] rdata_peri_uart;
 assign rdata_peri_uart = (addr[7:0] < 8'h18) ? rdata_peri : rdata_uart;
 assign rdata = rd ? (addr[31:10] == 0 ? RAMDATA[addr[9:2]] : rdata_peri_uart):32'b0;
-
-
-
 
 
 always@(posedge clk) begin

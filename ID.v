@@ -19,6 +19,7 @@ module ID (
 
   input ID_Flush,
   input IRQ,
+  input uart_wait,
 
   output PCSrcJ,
   output PCSrcJR,
@@ -126,7 +127,7 @@ always @(posedge clk or negedge reset_b) begin
   if (~reset_b) begin
     ID_EX <= 0;
   end
-  else begin
+  else if(~uart_wait) begin
     if(~bubble && ~ID_Flush) begin
       ID_EX[31:0] <= RsDataTrue[31:0];
       ID_EX[63:32] <= RtDataTrue[31:0];

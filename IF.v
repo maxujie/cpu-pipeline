@@ -12,6 +12,7 @@ module IF(
 
   input intruption,
   input exception,
+  input uart_wait,
 
   output reg [63:0] IF_ID);
 
@@ -30,9 +31,9 @@ always @ (posedge clk or negedge reset_b) begin
     PC <= 32'h8000_0000;
     IF_ID <= 0;
   end
-  else begin
+  else if(~uart_wait)begin
   if (~IF_Pause) begin  // not bubble
-    if (~(intruption | exception)) begin
+    if (~(intruption | exception) || PC[31] == 1'b1) begin
       case (PCSrc)
         3'b000 : PC <= PC_Plus4;
         3'b001 : PC <= branch_address;

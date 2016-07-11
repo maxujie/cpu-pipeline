@@ -22,7 +22,7 @@ begin
 	EXTOp = 0;
 	LUOp = 0;
 
-	if(!IRQ)
+	if(~IRQ || PC31)
 	begin
 		case(Instruct[31:26])
 			6'b000000:

@@ -34,6 +34,7 @@ module EX(
   input MEM_WB_RegWrite,
   input [4:0] MEM_WB_WriteReg,
   input [31:0] MEM_WB_RegWriteData,
+  input uart_wait,
 
   output PCSrcB,
   output reg [138:0] EX_MEM);
@@ -87,7 +88,7 @@ module EX(
     if (~reset_b) begin
       EX_MEM <= 0;
     end
-    else begin
+    else if (~uart_wait) begin
       EX_MEM[31:0] <= MemWriteData;  // MEM
       EX_MEM[63:32] <= ALU_S;  // MEM WB
       EX_MEM[68:64] <= WriteReg;  // WB
