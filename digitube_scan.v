@@ -1,5 +1,3 @@
-`timescale 1ns/1ps
-
 //For Altera DE2: Trans non-scanning Digital tube to scanning Digital tube
 
 module digitube_scan(digi_in,digi_out1,digi_out2,digi_out3,digi_out4);
@@ -15,4 +13,3 @@ assign digi_out3=(digi_in[11:8]==4'b0100)?digi_in[6:0]:7'b111_1111;
 assign digi_out4=(digi_in[11:8]==4'b1000)?digi_in[6:0]:7'b111_1111;
 
 endmodule
-
