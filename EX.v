@@ -36,8 +36,7 @@ module EX(
   input [31:0] MEM_WB_RegWriteData,
 
   output PCSrcB,
-  output reg [138:0] EX_MEM);
-
+  output reg [139:0] EX_MEM);
 
   wire [1:0] ForwardA;
   wire [1:0] ForwardB;
@@ -95,6 +94,7 @@ module EX(
       EX_MEM[73:71] <= PCSrcB ? 3'b0 : {MemToReg, RegWrite};    // WB
       EX_MEM[105:74] <= PC_Plus4; // jal
       EX_MEM[138:106] <= {LUOp, LUData[31:0]}; // WB
+      EX_MEM[139] <= PCSrcB;
     end
   end
 

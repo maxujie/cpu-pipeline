@@ -1,15 +1,26 @@
 module CPU_Pipeline (
-  input clk,
+  input clk_50m,
   input reset_b,
 
   // Peripheral
   input [7:0] switch,
   output [7:0] led,
-  output [11:0] digi);
+  output [6:0] bcd1,
+  output [6:0] bcd2,
+  output [6:0] bcd3,
+  output [6:0] bcd4,
+
+  // UART
+  input uart_rxd,
+  output uart_txd);
+
+
+  wire clk;
+  CPU_CLK CLK (clk_50m, clk);
 
   wire [63:0] IF_ID;
-  wire [229:0] ID_EX;
-  wire [138:0] EX_MEM;
+  wire [230:0] ID_EX;
+  wire [139:0] EX_MEM;
   wire [37:0] MEM_WB;
 
   wire PCSrcJR, PCSrcJ, PCSrcB;
@@ -28,6 +39,7 @@ module CPU_Pipeline (
   assign IF_Flush = jFlush | PCSrcB;
   assign ID_Flush = PCSrcB;
 
+  wire [11:0] digi;
 
   IF IF (
   .clk(clk),
@@ -43,6 +55,8 @@ module CPU_Pipeline (
 
   .intruption(intruption),
   .exception(exception),
+
+
 
   .IF_ID(IF_ID));
 
@@ -66,8 +80,15 @@ module CPU_Pipeline (
   .MEM_WB_WriteReg(MEM_WB[36:32]),
   .MEM_WB_RegWriteData(MEM_WB[31:0]),
 
+  .EX_Jump(ID_EX[230]),
+  .EX_Branch(PCSrcB),
+  .EX_PC_Plus4(ID_EX[189:158]),
+  .MEM_Branch(EX_MEM[139]),
+  .MEM_PC_Plus4(EX_MEM[105:74]),
+
   .ID_Flush(ID_Flush),
   .IRQ(irqout),
+
 
   // TO IF
   .PCSrcJ(PCSrcJ),
@@ -120,6 +141,8 @@ module CPU_Pipeline (
   .MEM_WB_WriteReg(MEM_WB[36:32]),
   .MEM_WB_RegWriteData(MEM_WB[31:0]),
 
+
+
   .PCSrcB(PCSrcB),
   .EX_MEM(EX_MEM));
 
@@ -147,6 +170,19 @@ module CPU_Pipeline (
   .switch(switch),
   .led(led),
   .digi(digi),
-  .irqout(irqout));
+  .irqout(irqout),
+
+  // UART
+  .clk_50m(clk_50m),
+  .uart_rxd(uart_rxd),
+  .uart_txd(uart_txd));
+
+
+ digitube_scan digitube_scan(
+     .digi_in(digi),
+     .digi_out1(bcd1),
+     .digi_out2(bcd2),
+     .digi_out3(bcd3),
+     .digi_out4(bcd4));
 
 endmodule

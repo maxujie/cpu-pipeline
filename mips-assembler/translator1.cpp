@@ -3,7 +3,6 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string>
-#include <windows.h>
 using namespace std;
 
 string Regnum(string reg);
