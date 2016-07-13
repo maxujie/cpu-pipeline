@@ -12,18 +12,13 @@ module IF(
 
   input intruption,
   input exception,
-  input IRQ_BACKUP,
-  input IRQ_RECOVERY,
 
   output reg [63:0] IF_ID);
 
 wire [31:0] PC_Plus4;
 wire [31:0] Instruction;
 
-
 reg [31:0] PC;
-reg [31:0] PC_BACKUP;
-reg [63:0] IF_ID_BACKUP;
 
 assign PC_Plus4 = {(intruption | exception | PC[31]), PC[30:0] + 31'd4};
 
@@ -34,14 +29,7 @@ always @ (posedge clk or negedge reset_b) begin
     PC <= 32'h8000_0000;
     IF_ID <= 0;
   end
-  else if (IRQ_RECOVERY) begin
-    PC <= PC_BACKUP;
-    IF_ID <= IF_ID_BACKUP;
-  end else begin
-      if (IRQ_BACKUP) begin
-       PC_BACKUP <= PC;
-       IF_ID_BACKUP <= IF_ID;
-      end
+  else begin
       if (~IF_Pause) begin  // not bubble
         if (~(intruption | exception) || PC[31] == 1'b1) begin
           case (PCSrc)

@@ -34,13 +34,9 @@ module EX(
   input MEM_WB_RegWrite,
   input [4:0] MEM_WB_WriteReg,
   input [31:0] MEM_WB_RegWriteData,
-  input IRQ_BACKUP,
-  input IRQ_RECOVERY,
 
   output PCSrcB,
-  output reg [138:0] EX_MEM);
-
-  reg [138:0] EX_MEM_BACKUP;
+  output reg [139:0] EX_MEM);
 
   wire [1:0] ForwardA;
   wire [1:0] ForwardB;
@@ -90,11 +86,6 @@ module EX(
     if (~reset_b) begin
       EX_MEM <= 0;
     end
-    else if (IRQ_RECOVERY) EX_MEM <= EX_MEM_BACKUP;
-    else if (IRQ_BACKUP) begin
-        EX_MEM_BACKUP <= EX_MEM;
-        EX_MEM[138:0] <= 0;
-    end
     else begin
       EX_MEM[31:0] <= MemWriteData;  // MEM
       EX_MEM[63:32] <= ALU_S;  // MEM WB
@@ -103,6 +94,7 @@ module EX(
       EX_MEM[73:71] <= PCSrcB ? 3'b0 : {MemToReg, RegWrite};    // WB
       EX_MEM[105:74] <= PC_Plus4; // jal
       EX_MEM[138:106] <= {LUOp, LUData[31:0]}; // WB
+      EX_MEM[139] <= PCSrcB;
     end
   end
 

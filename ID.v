@@ -20,6 +20,12 @@ module ID (
   input ID_Flush,
   input IRQ,
 
+  input EX_Jump,
+  input EX_Branch,
+  input [31:0] EX_PC_Plus4,
+  input MEM_Branch,
+  input [31:0] MEM_PC_Plus4,
+
   output PCSrcJ,
   output PCSrcJR,
   output [31:0] jump_address,
@@ -28,11 +34,7 @@ module ID (
   output bubble,
   output exception,
   output jFlush,
-  output reg [229:0] ID_EX,
-  output IRQ_BACKUP,
-  output IRQ_RECOVERY);
-
-reg [229:0] ID_EX_BACKUP;
+  output reg [230:0] ID_EX);
 
 wire [2:0] PCSrc;
 wire [1:0] RegDst;
@@ -46,7 +48,6 @@ wire MemRead;
 wire [1:0] MemToReg;
 wire EXTOp;
 wire LUOp;
-
 
 Control ControlUnit(
   .Instruct(Instruction),
@@ -91,9 +92,6 @@ assign Funct = Instruction[5:0];
 assign Imm16 = Instruction[15:0];
 assign Imm32 = EXTOp ? (Imm16[15] ? {16'hffff, Imm16} : {16'h0000, Imm16}) : {16'h0000, Imm16};
 assign LUData = {Imm16[15:0], 16'h0000};
-assign IRQ_BACKUP = PCSrcIRQ;
-assign IRQ_RECOVERY = PCSrcJR && (Rs == 5'd26);
-
 
 wire [31:0] RsData;
 wire [31:0] RtData;
@@ -112,13 +110,21 @@ RegFile RF (
 
 wire [31:0] RsDataTrue;
 wire [31:0] RtDataTrue;
-assign RsDataTrue = (MEM_WB_RegWrite && Rs == MEM_WB_Rd && Rs != 5'b0) ? MEM_WB_RdData : RsData;
-assign RtDataTrue = (MEM_WB_RegWrite && Rt == MEM_WB_Rd && Rt != 5'b0) ? MEM_WB_RdData : RtData;
+assign RsDataTrue = (EX_MEM_RegWrite && Rs == EX_MEM_Rd && Rs != 5'b0) ? EX_MEM_RdData :
+                (MEM_WB_RegWrite && Rs == MEM_WB_Rd && Rs != 5'b0) ? MEM_WB_RdData : RsData;
+assign RtDataTrue = (EX_MEM_RegWrite && Rt == EX_MEM_Rd && Rt != 5'b0) ? EX_MEM_RdData :
+                (MEM_WB_RegWrite && Rt == MEM_WB_Rd && Rt != 5'b0) ? MEM_WB_RdData : RtData;
 
 wire [31:0] branch_address;
 assign jump_address = {PC_Plus4[31:28], Instruction[25:0], 2'b0}; // j, jal
 assign branch_address = PC_Plus4 + {Imm32[29:0], 2'b00};
 assign jr_address = RsDataTrue;  // jalr, jr
+
+wire [31:0] PC_Plus4_True;
+assign PC_Plus4_True = ~PCSrcIRQ ? PC_Plus4 :  // for IRQ
+                        MEM_Branch ? MEM_PC_Plus4 :
+                        EX_Branch | EX_Jump ? EX_PC_Plus4 : PC_Plus4;
+
 
 HazardDetection HD(
   .IF_ID_Rs(Rs),
@@ -132,10 +138,7 @@ always @(posedge clk or negedge reset_b) begin
   if (~reset_b) begin
     ID_EX <= 0;
   end
-  else if (IRQ_RECOVERY) ID_EX <= ID_EX_BACKUP;
-
   else begin
-    if (IRQ_BACKUP) ID_EX_BACKUP <= ID_EX;
     if(~bubble && ~ID_Flush) begin
       ID_EX[31:0] <= RsDataTrue[31:0];
       ID_EX[63:32] <= RtDataTrue[31:0];
@@ -147,13 +150,14 @@ always @(posedge clk or negedge reset_b) begin
       ID_EX[121:120] <= PCSrcJR ? 2'b0 : {MemRead, MemWrite};  // MEM
       ID_EX[124:122] <= PCSrcJR ? 3'b0 : {MemToReg, RegWrite}; // WB
       ID_EX[157:125] <= {LUOp, LUData[31:0]}; // WB
-      ID_EX[189:158] <= PC_Plus4[31:0];  // jal, jalr
+      ID_EX[189:158] <= PC_Plus4_True[31:0];  // jal, jalr, IRQ
       ID_EX[194:190] <= Shamt[4:0];
       ID_EX[226:195] <= Imm32[31:0];
       ID_EX[227] <= Branch;  // EX
       ID_EX[229:228] <= RegDst[1:0];  // WB
-    end else ID_EX[229:0] <= 0; // bubble
-end
+      ID_EX[230] <= PCSrcJ | PCSrcJR;
+    end else ID_EX[230:0] <= 0; // bubble
+    end
 end
 
 endmodule

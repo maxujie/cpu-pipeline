@@ -18,12 +18,9 @@ module CPU_Pipeline (
   wire clk;
   CPU_CLK CLK (clk_50m, clk);
 
-  wire IRQ_BACKUP;
-
-
   wire [63:0] IF_ID;
-  wire [229:0] ID_EX;
-  wire [138:0] EX_MEM;
+  wire [230:0] ID_EX;
+  wire [139:0] EX_MEM;
   wire [37:0] MEM_WB;
 
   wire PCSrcJR, PCSrcJ, PCSrcB;
@@ -58,8 +55,8 @@ module CPU_Pipeline (
 
   .intruption(intruption),
   .exception(exception),
-  .IRQ_BACKUP(IRQ_BACKUP),
-  .IRQ_RECOVERY(IRQ_RECOVERY),
+
+
 
   .IF_ID(IF_ID));
 
@@ -83,10 +80,15 @@ module CPU_Pipeline (
   .MEM_WB_WriteReg(MEM_WB[36:32]),
   .MEM_WB_RegWriteData(MEM_WB[31:0]),
 
+  .EX_Jump(ID_EX[230]),
+  .EX_Branch(PCSrcB),
+  .EX_PC_Plus4(ID_EX[189:158]),
+  .MEM_Branch(EX_MEM[139]),
+  .MEM_PC_Plus4(EX_MEM[105:74]),
+
   .ID_Flush(ID_Flush),
   .IRQ(irqout),
-  .IRQ_BACKUP(IRQ_BACKUP),
-  .IRQ_RECOVERY(IRQ_RECOVERY),
+
 
   // TO IF
   .PCSrcJ(PCSrcJ),
@@ -139,8 +141,8 @@ module CPU_Pipeline (
   .MEM_WB_WriteReg(MEM_WB[36:32]),
   .MEM_WB_RegWriteData(MEM_WB[31:0]),
 
-  .IRQ_BACKUP(IRQ_BACKUP),
-  .IRQ_RECOVERY(IRQ_RECOVERY),
+
+
   .PCSrcB(PCSrcB),
   .EX_MEM(EX_MEM));
 
@@ -173,8 +175,8 @@ module CPU_Pipeline (
   // UART
   .clk_50m(clk_50m),
   .uart_rxd(uart_rxd),
-  .uart_txd(uart_txd),
-  .IRQ_BACKUP(IRQ_BACKUP));
+  .uart_txd(uart_txd));
+
 
  digitube_scan digitube_scan(
      .digi_in(digi),

@@ -61,9 +61,12 @@ wire [31:0] rdata_peri_uart;
 assign rdata_peri_uart = (addr[7:0] < 8'h18) ? rdata_peri : rdata_uart;
 assign rdata = rd ? (addr[31:10] == 0 ? RAMDATA[addr[9:2]] : rdata_peri_uart):32'b0;
 
-
+integer i;
 always@(posedge clk) begin
-	if(wr && addr[31:2] < RAM_SIZE) RAMDATA[addr[9:2]] <= wdata;
+	if(~reset) begin
+		for(i=0;i<RAM_SIZE;i=i+1) RAMDATA[i]<=32'b0;
+	end
+	else if(wr && addr[31:2] < RAM_SIZE) RAMDATA[addr[9:2]] <= wdata;
 end
 
 endmodule
