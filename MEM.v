@@ -18,6 +18,9 @@ module MEM (
 
   output reg [37:0] MEM_WB,
 
+  input IRQ_BACKUP,
+  input IRQ_RECOVERY,
+
   // Peripheral
   input [7:0] switch,
   output [7:0] led,
@@ -27,8 +30,9 @@ module MEM (
   // UART
   input clk_50m,
   input uart_rxd,
-  output uart_txd,
-  output uart_wait);
+  output uart_txd);
+
+reg [37:0] MEM_WB_BACKUP;
 
 wire [31:0] MemReadData;
 
@@ -65,7 +69,12 @@ always @(posedge clk or negedge reset_b) begin
   if (~reset_b) begin
     MEM_WB <= 0;
   end
-  else if (~uart_wait) begin
+  else if (IRQ_RECOVERY) MEM_WB <= MEM_WB_BACKUP;
+  else if (IRQ_BACKUP) begin
+      MEM_WB_BACKUP <= MEM_WB;
+      MEM_WB[37:0] <= 0;
+  end
+  else begin
     MEM_WB[31:0] <= RegWriteData[31:0];
     MEM_WB[36:32] <= WriteReg[4:0];
     MEM_WB[37] <= RegWrite;

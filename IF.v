@@ -12,7 +12,8 @@ module IF(
 
   input intruption,
   input exception,
-  input uart_wait,
+  input IRQ_BACKUP,
+  input IRQ_RECOVERY,
 
   output reg [63:0] IF_ID);
 
@@ -21,6 +22,8 @@ wire [31:0] Instruction;
 
 
 reg [31:0] PC;
+reg [31:0] PC_BACKUP;
+reg [63:0] IF_ID_BACKUP;
 
 assign PC_Plus4 = {(intruption | exception | PC[31]), PC[30:0] + 31'd4};
 
@@ -31,22 +34,29 @@ always @ (posedge clk or negedge reset_b) begin
     PC <= 32'h8000_0000;
     IF_ID <= 0;
   end
-  else if(~uart_wait)begin
-  if (~IF_Pause) begin  // not bubble
-    if (~(intruption | exception) || PC[31] == 1'b1) begin
-      case (PCSrc)
-        3'b000 : PC <= PC_Plus4;
-        3'b001 : PC <= branch_address;
-        3'b010 : PC <= jump_address;
-        3'b100 : PC <= jr_address; // jr, jalr
-        default : PC <= 32'hffff_ffff;  // unexcepted error
-      endcase
-    end
-    else if (intruption) PC <= 32'h8000_0004;
-    else if (exception) PC <= 32'h8000_0008;
-    else PC <= 32'hffff_ffff;  // if not bubble end
-    IF_ID <= IF_Flush ? {PC_Plus4, 32'd0} : {PC_Plus4, Instruction};
-  end // end bubble
+  else if (IRQ_RECOVERY) begin
+    PC <= PC_BACKUP;
+    IF_ID <= IF_ID_BACKUP;
+  end else begin
+      if (IRQ_BACKUP) begin
+       PC_BACKUP <= PC;
+       IF_ID_BACKUP <= IF_ID;
+      end
+      if (~IF_Pause) begin  // not bubble
+        if (~(intruption | exception) || PC[31] == 1'b1) begin
+          case (PCSrc)
+            3'b000 : PC <= PC_Plus4;
+            3'b001 : PC <= branch_address;
+            3'b010 : PC <= jump_address;
+            3'b100 : PC <= jr_address; // jr, jalr
+            default : PC <= 32'hffff_ffff;  // unexcepted error
+          endcase
+        end
+        else if (intruption) PC <= 32'h8000_0004;
+        else if (exception) PC <= 32'h8000_0008;
+        else PC <= 32'hffff_ffff;  // if not bubble end
+        IF_ID <= IF_Flush ? {PC_Plus4, 32'd0} : {PC_Plus4, Instruction};
+      end // end bubble
   end
 end
 

@@ -5,7 +5,7 @@ output clk;
 reg clk = 0;
 reg [31:0] cnt = 0;
 
-parameter N = 1000; 
+parameter N = 100; 
 
 always @ (posedge clk_50m) begin
     if(cnt >= N) begin
