@@ -1,0 +1,242 @@
+%!TEX program=xelatex
+
+\documentclass[a4paper]{article}
+\usepackage{ctex}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{minted}
+\usepackage{wasysym}
+\usepackage{geometry}
+\geometry{left=2cm,right=2cm,top=2cm,bottom=2cm}
+
+\title{32 位 MIPS 处理器设计\\实验报告}
+\author{马栩杰 \\ 2014011085 \\ 无 43 班}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{实验目的}
+\label{sec:实验目的}
+
+\begin{itemize}
+  \item 熟悉现代处理器的基本工作原理；掌握单周期和流水线处理器的设计方法。
+\end{itemize}
+
+\section{设计方案}
+\label{sec:设计方案}
+
+\subsection{流水线}
+\label{sub:流水线}
+
+完成者：马栩杰
+
+使用了单周期的 Control Unit，其余部分采用标准的 5 级流水线设计重新完成。
+
+为使系统结构清晰，方便代码编写与调试，将 IF, ID, EX, MEM, WB 各设计成了一个单独的模块，模块间通过少量必需的连线和中间寄存器来传递数据，尽可能降低模块间的耦合性。这样的模块划分很大程度上提高了代码编写的效率和代码的可读性，也使后期进行调试时更加容易找出和修改代码中的错误。
+
+顶层模块 CPU\_Pipeline 中基本没有组合逻辑单元，仅仅将时钟分频模块、扫描显示模块以及流水线中的 5 个关键模块的输入输出连接起来，因此不展开介绍。
+
+以下分别说明各模块的具体设计实现。
+
+\subsubsection{IF}
+\label{subs:IF}
+
+IF 阶段需要完成的工作是从指令存储器中取当前 PC 指向的指令，并且在下一个时钟上升沿将 PC 置为正确的值。
+
+\begin{enumerate}
+  \item 下一个时钟周期的 PC 有以下几种情况：
+
+  \begin{enumerate}
+    \item PC + 4 ：正常情况下 PC 会被更新为 PC + 4，顺序处理下一条指令
+    \item branch\_address（来自 EX）：如果当前周期 EX 阶段判断需要分支，则将 PC 更新为分支后的地址
+    \item jump\_address （来自 ID）：与上述类似，jump 的判断在 ID 进行
+    \item jr\_address （来自 ID）：同上
+    \item 异常处理地址：如果 exception 信号（来自 ID）有效并且当前 PC 最高位是 0
+    \item 中断处理地址：如果 intruption 信号（来自 ID）有效并且当前 PC 最高位是 0
+  \end{enumerate}
+
+  \item 如果发生分支或跳转，使用 IF\_Flush 信号将 IF\_ID 寄存器置为 0
+  \item 如果发生 load-use 冒险，使用 IF\_Pause 阻止当前 PC 和 IF\_ID 寄存器被改写
+
+\end{enumerate}
+
+\subsubsection{ID}
+\label{subs:ID}
+
+ID 阶段完成了指令解析、中断判断、load-use 冒险检测、对跳转指令的判断、读取寄存器、读取寄存器数据时的转发、发生分支时 PC+4 的转发。
+
+\begin{enumerate}
+  \item 指令解析与中断判断沿用单周期处理器的设计，在 Control Unit 中解析指令并判断是否产生中断，如果需要产生中断则将当前的控制信号设置为将此周期的 PC+4 存储到中断地址寄存器中
+  \item 单独定义了一个 load-use 冒险检测模块，确定是否需要产生 IF\_Pause 信号
+  \item 对跳转指令的判断和读取寄存器是常规行为，不做赘述
+  \item 读取寄存器时的转发：在读取寄存器时可能会出现当前指令之前的一两条指令所写的寄存器正好与当前寄存器相同的情况，对此进行判断，决定是否替换读取的数据
+
+  \begin{minted}[frame=true]{verilog}
+    assign RsDataTrue = (EX_MEM_RegWrite && Rs == EX_MEM_Rd && Rs != 5'b0) ?
+                 EX_MEM_RdData :
+                (MEM_WB_RegWrite && Rs == MEM_WB_Rd && Rs != 5'b0) ?
+                 MEM_WB_RdData : RsData;
+    assign RtDataTrue = (EX_MEM_RegWrite && Rt == EX_MEM_Rd && Rt != 5'b0) ?
+                         EX_MEM_RdData :
+                        (MEM_WB_RegWrite && Rt == MEM_WB_Rd && Rt != 5'b0) ?
+                         MEM_WB_RdData : RtData;
+  \end{minted}
+
+  \item 发生分支时 PC+4 的转发：由于设计时中断在控制单元中进行判断，而中断可能在任何一个周期中发生。如果中断发生时 ID 正好处在分支指令后的两个气泡中，那么此时就会出现存储到中断寄存器中的指令地址错误的情况。为了解决这一问题，加入了对 PC+4 值的转发。如果当前周期产生了中断（产生 PCSrcIRQ 信号），那么检测当前周期位于 EX 和 MEM 的指令是否是一条成功执行的分支指令（检测对应阶段的 Branch 信号），如果是的话，说明当前周期的 ID 阶段正处在 Branch 后的气泡中，进行转发，用此前 Branch 指令对应的指令地址替换当前的 PC+4 存到中断寄存器中
+
+  \begin{minted}[frame=true]{verilog}
+    assign PC_Plus4_True = ~PCSrcIRQ ? PC_Plus4 :  // for IRQ
+                            MEM_Branch ? MEM_PC_Plus4 :
+                            EX_Branch | EX_Jump ? EX_PC_Plus4 : PC_Plus4;
+  \end{minted}
+\end{enumerate}
+
+\subsubsection{EX}
+\label{subs:EX}
+
+EX 阶段完成了 ALU 运算、ALU 操作输入数据的转发、Branch 的判断。
+
+\begin{enumerate}
+  \item 由此前已经写好的 ALU 模块完成 ALU 运算
+  \item 利用 ID 阶段控制模块生成的 ALUSrc1 信号确定 ALU 的第一个输入 ALU\_A 是来自 RsData 还是 Shamt，用 ALUSrc2 确定 ALU\_B 来自 RtData 还是立即数
+  \item 在执行 ALU 操作前，还需要判断此时 ALU 需要用到的来自寄存器的数据是否与前一个周期要写入的寄存器相同（并且前一个周期要写入的寄存器非 0），如果相同则需要再次对数据进行转发
+
+  \begin{minted}[frame=true]{verilog}
+  assign RsDataTrue = ForwardA == 2'b00 ? RsData :
+                     (ForwardA == 2'b10 ? EX_MEM_RdData : MEM_WB_RdData);
+  assign RtDataTrue = ForwardB == 2'b00 ? RtData :
+                     (ForwardB == 2'b10 ? EX_MEM_RdData : MEM_WB_RdData);
+  \end{minted}
+
+\end{enumerate}
+
+\subsubsection{MEM}
+\label{subs:MEM}
+
+MEM 阶段需要完成对 RAM 的访问、对外设的访问以及对 UART 模块的访问。
+
+为了让接口统一、透明使用外设及 UART，将 UART 和外设操作都放在了 DataMem 模块中，对外表现为与访问 RAM 接口相同。
+
+而与此同时，对 DataMem 所做的修改是在 DataMem 模块中实例化一个外设模块和 UART 模块，将要访问的地址直接分别传入两个模块，然后根据输入地址的值来确定输出的数据来源。如果当前指令不读取存储器，输出 0。如果读取存储器的地址的前 22 位是 0 的话，则返回 RAM 的数据，否则返回 uart 或外设的数据。具体代码实现如下。
+
+\begin{minted}[frame=single]{verilog}
+  wire [31:0] rdata_peri_uart;
+  assign rdata_peri_uart = (addr[7:0] < 8'h18) ? rdata_peri : rdata_uart;
+  assign rdata = rd ? (addr[31:10] == 0 ? RAMDATA[addr[9:2]] : rdata_peri_uart)
+                    : 32'b0;
+\end{minted}
+
+\subsubsection{WB}
+\label{subs:WB}
+
+WB 阶段确定向 Reg 写入的数据来源。在指令是 lui、R 型指令、lw、jal/jalr/中断 的情况下，写入寄存器的数据来源有所不同。
+
+\begin{minted}[frame=single]{verilog}
+assign RegWriteData = LUOp ? LUData:
+         MemToReg == 2'b00 ? ALU_S :
+         MemToReg == 2'b01 ? MemReadData :
+         PC_Plus4; // jal/jalr or exception
+\end{minted}
+
+由于 WB 阶段需要做的工作不多，所以将这部分代码也放在了 MEM 模块中。
+
+\section{关键代码与文件清单}
+\label{sec:关键代码与文件清单}
+
+\subsection{ALU}
+\label{sub:ALU}
+
+\subsection{单周期}
+\label{sub:单周期}
+
+\subsection{流水线}
+\label{sub:流水线}
+
+流水线部分的代码文件包括：
+
+\begin{verbatim}
+CPU_Pipeline.v
+IF.v
+ID.v
+EX.v
+MEM.v
+DataMem.v
+\end{verbatim}
+
+除此以外还使用了此前完成的其他部分模块。
+
+由于 CPU\_Pipeline.v 仅仅作为顶层模块调用各模块、DataMem.v 在此前的设计方案部分已经描述清楚，所以在这里只贴出流水线几个阶段的代码。
+
+\subsubsection{IF}
+\label{subs:IF}
+
+\inputminted[frame=single, linenos=true]{verilog}{}
+
+\subsubsection{ID}
+\label{subs:ID}
+
+\inputminted[frame=single, linenos=true]{verilog}{}
+
+\subsubsection{EX}
+\label{subs:EX}
+
+\inputminted[frame=single, linenos=true]{verilog}{}
+
+\subsubsection{MEM}
+\label{subs:MEM}
+
+\inputminted[frame=single, linenos=true]{verilog}{}
+
+\inputminted[frame=single, linenos=true]{verilog}
+
+\label{sec:仿真结果与分析}
+
+\subsection{流水线}
+\label{sub:流水线}
+
+为了验证流水线的正确性，编写几个简单的 verilog 程序进行验证。
+
+\subsubsection{转发}
+\label{subs:转发}
+
+\subsection{分支跳转}
+\label{sub:分支跳转}
+
+\section{综合情况}
+\label{sec:综合情况}
+
+\subsection{单周期}
+\label{sub:单周期}
+
+
+\subsection{流水线}
+\label{sub:流水线}
+
+
+相比单周期，流水线的资源使用要少很多。这个结果是相当出乎我的预料的。本来，我认为单周期 CPU 结构比流水线简单，使用的资源应该会比流水线更少，但是现实却与预期相反。由于在编写代码时单周期和流水线的代码差异还是比较大的，因此这样的横向对比可能会受到很多条件的影响。
+
+在运行效率上，单周期流水线的最高时钟频率为，流水线的最高频率为，流水线 CPU 的效率是单周期的 倍。可以看到流水线设计的确大大提高了 CPU 的运行效率。
+
+\section{思想体会}
+\label{sec:思想体会}
+
+在这次大作业中，我主要完成了流水线的部分。
+
+在开始编写代码之前，我读到一篇知乎专栏文章 Verilog coding 的基本理论\footnote{\url{https://zhuanlan.zhihu.com/p/21447682}}，这篇文章整体上有这样的几个建议：（1）少用寄存器，当时序要求不满足时再尝试添加寄存器来解决时序问题； （2）在时序要求不满足时多做尝试，添加寄存器分割路径。虽然这篇文章并没有深入地讲多少实质性的内容，但是在读完这篇文章之后，我认真地思考了一下 verilog 的硬件代码与那些高级语言编写的在 CPU 上运行的软件代码到底有哪些本质的区别。
+
+软件代码是单线程\footnote{这个说法当然是不对的，但是在这里用``单线程''的说法来将软件代码与硬件代码之间做对比应该是可以理解的。}运行的，程序的运行时间是所有执行到的语句花费时间之和。而在 FPGA 上执行的程序则没有线程的概念。如果没有数据和控制信号的依赖关系的话，两个运算过程可以在 FPGA 上同时进行。在同一个时钟周期内，每条路径进行运算的时间是从运算开始时电路输入电压发生改变到电路的输出电压达到稳定的时间，电路中多条互不相关的路径可以同时进行这一过程。对软件而言，赋值操作是设置了一个变量名对应的值\footnote{当然这么说也是不严谨的..}，具体到底层实现上就是将 RAM 上的某一位置置为一个特定值。而在 verilog 中，对 reg 变量的赋值可以理解为更新一个寄存器的值，需要通过某些信号的边沿来触发；对 wire 信号的赋值则表示用组合电路对一系列输入信号做运算，将输出端命名为被赋值的变量。最后，软件代码中的函数可以简单地理解为把一系列语句打包以后起一个别名\footnote{非常不严谨！}，本质上还是在一个单线程中进行操作。而 verilog 上的模块则是一旦实例化以后就会一直工作，输入改变输出也随之改变，完全是集成电路的工作方式\footnote{嗯实际上应该可以理解为集成电路}。在编写软件代码时，思考的逻辑通常是 a 然后 b 然后 c 然后 d 这样线性进行的，需要关注每一个具体语句执行的顺序。而在时钟同步的硬件代码中，思考的逻辑就会变成在时钟发生变化前需要完成 a、b、c、d 这样，关注的中心放在了当某一个信号到来前电路会达到一个怎样的稳态。总的来说，verilog 与软件语言所面对的程序运行方式、对程序中数据的理解、对程序控制流的理解都是截然不同的，相应地，在编写 verilog 程序的时候就不能完全照搬软件代码的思路，而是要用更贴近电路执行方式的思路来写。
+
+从原理上来说，这次大作业并没有什么本质困难，因为流水线 CPU 的原理和设计思路已经在理论课上讲得很清楚了，那么需要做的就是将设计思路转化为代码实现。
+
+吸取此前编写其他程序时的经验以及参考一些软件工程方面书籍\footnote{重构：改善既有代码的结构}给出的建议，在设计整体结构时就采取了让系统模块间耦合程度尽可能低的设计思路，在每个模块编写的过程中将注意力集中在模块内部。从个人编写代码时的感受而言，低耦合的设计的确让我在完成每一个独立模块的时候需要关注的东西更少，提高了编写代码的效率，也有助于写出质量更高更容易维护的代码。
+
+我本来以为在流水线 CPU 的原理设计已经很明确的前提下，再考虑到 verilog 的硬件特性，不用关注具体语句执行的先后顺序，那么代码的编写应该是一个比较机械化的操作，不太可能出什么差错。然而在完成代码的编写之后，开始进行调试，却出现了很多我此前没有预想到的问题。
+
+首先是转发模块。在设计之初，我没有仔细考虑清楚转发到底会发生在什么时间，因而在写转发功能的时候没有覆盖到当前周期 WB 写寄存器的同时 ID 读取寄存器的情况。一开始进行的简单的测试并没有覆盖到这种情况，直到后来开始尝试运行 GCD 代码时才发现结果不对。结果是在后期的调试中花了很长时间才发现这个错误。如果能够尽早对代码进行更完善的测试，尽量让代码测试覆盖到所有情况的话，这个问题本来应该是可以避免的。
+
+而困扰我很长时间的另外一个问题是中断时到底应该怎样正确处理。在单周期 CPU 中，这个问题是很好解决的，因为每一个时钟周期都只执行一条指令，因此只需要清理掉当前周期的指令，执行中断操作，从中断返回以后再重新执行原来的那条指令就好了。但是对流水线来说，由于每一个时钟周期都有多条不同阶段的指令在同时执行，甚至有的阶段因为处在此前指令产生的阻塞中，相当于没有语句在执行。这就给中断的处理造成了一定的隐患。在代码实现中，将中断处理放在了 ID 阶段，中断发生时将当前指令替换为 ``存储当前阶段的 PC+4 到中断寄存器''。由于与单周期的处理方法相同，我并没有仔细考虑其中存在的问题。在简单的情况下，这样的确不会出错。然而，如果编写的代码确实有问题，那么问题早晚会暴露出来。用 GCD 代码进行仿真时，我发现在发生中断的时候，有几条分支指令总是不能正常工作。在仔细观察了仿真时的寄存器内容以后，我发现中断寄存器里存储的 Branch 地址总是不发生分支的指令地址。为什么会存储错误的地址呢？再看中断发生的时间，恰好是在 Branch 之后紧接着的一个周期。于是我意识到出现这个问题是因为中断发生时的 ID 阶段正好在 Branch 的一个气泡当中。为解决这个问题，我在 ID 阶段加入了对 PC+4 进行转发的操作。对于正常的指令，这个转发操作不会产生任何影响；而对于中断，如果当前的 ID 正好在 Branch 或者 Jump 产生的气泡中，那么将会转发此前最近的一条正常执行指令所对应的 PC+4 ，也就是在中断寄存器中存储此前已经执行过的那条分支跳转指令，在中断返回时重新进行一次分支跳转。
+
+总的来说，在这次大作业中，我感到受益匪浅。经过对硬件编程的思考和编程的实践，我对 verilog 的硬件编程思想有了进一步的理解，将来如果我从事相关的开发工作，相信从这次大作业中得到的经验会有很多帮助。此外，虽然是用 verilog 进行硬件编程，但是通过尝试在编码过程中应用一些现代软件开发模型，这次作业也促进了我对如何高效开发一个方便维护、不易出错的软件的认识。
+
+\end{document}
