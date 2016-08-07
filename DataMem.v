@@ -63,10 +63,7 @@ assign rdata = rd ? (addr[31:10] == 0 ? RAMDATA[addr[9:2]] : rdata_peri_uart):32
 
 integer i;
 always@(posedge clk) begin
-	if(~reset) begin
-		for(i=0;i<RAM_SIZE;i=i+1) RAMDATA[i]<=32'b0;
-	end
-	else if(wr && addr[31:2] < RAM_SIZE) RAMDATA[addr[9:2]] <= wdata;
+	if(wr && addr[31:2] < RAM_SIZE) RAMDATA[addr[9:2]] <= wdata;
 end
 
 endmodule
